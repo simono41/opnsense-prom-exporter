@@ -1,0 +1,4 @@
+-r requirements.tests.txt
+twine
+wheel
+pre-commit

@@ -1,8 +1,10 @@
+import pathlib
 from urllib.parse import urlparse
 
 from setuptools import find_packages, setup
 
 version = "0.1"
+HERE = pathlib.Path(__file__).parent
 
 
 def parse_requirements(file):
@@ -20,11 +22,14 @@ def parse_requirements(file):
 
 requires = parse_requirements("requirements.txt")
 tests_requires = parse_requirements("requirements.tests.txt")
+README = (HERE / "README.md").read_text()
 
 setup(
     name="opnsense-prom-exporter",
     version=version,
     description="OPNSense Prometheus exporter",
+    long_description=README,
+    long_description_content_type="text/markdown",
     author="Pierre Verkest",
     author_email="pierreverkest84@gmail.com",
     url="https://gitlab.com/micro-entreprise/opnsense-prom-exporter",
