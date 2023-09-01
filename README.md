@@ -1,3 +1,10 @@
+[![pipeline status](https://gitlab.com/micro-entreprise/opnsense-prom-exporter/badges/main/pipeline.svg)](https://gitlab.com/micro-entreprise/opnsense-prom-exporter/)
+[![coverage report](https://gitlab.com/micro-entreprise/opnsense-prom-exporter/badges/main/coverage.svg)](https://gitlab.com/micro-entreprise/opnsense-prom-exporter/)
+[![Version status](https://img.shields.io/pypi/v/opnsense-prom-exporter.svg)](https://pypi.python.org/pypi/opnsense-prom-exporter/)
+[![PyPi Package](https://img.shields.io/pypi/dm/opnsense-prom-exporter?label=pypi%20downloads)](https://pypi.org/project/opnsense-prom-exporter)
+
+
+
 # OPNSense Prometheus exporter
 
 I've configures OPNSense with High Availability settings using 2 servers.

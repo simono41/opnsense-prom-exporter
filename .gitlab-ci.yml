@@ -57,6 +57,7 @@ build:
 
 test:
   stage: test
+  coverage: '/\d+\%\s*$/'
   script:
     - pip install --editable ".[test]"
     - pytest
