@@ -61,10 +61,12 @@ test:
     - pytest
   artifacts:
     reports:
-      cobertura: coverage.xml
-      junit: junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: ./coverage.xml
+      junit: ./junit.xml
     paths:
-      - .coverage.test
+      - ./htmlcov/
   needs: [build]
 
 
