@@ -51,10 +51,10 @@ def process_requests(main, backup, exporter_instance: str = ""):
     """A dummy function that takes some time."""
     main_state = main.get_interface_vip_status()
     backup_sate = backup.get_interface_vip_status()
-    main_ha_state.labels(instance=exporter_instance, host=main.host)
-    main_ha_state.state(main_state)
-    backup_ha_state.labels(instance=exporter_instance, host=backup.host)
-    backup_ha_state.state(backup_sate)
+    main_ha_state.labels(instance=exporter_instance, host=main.host).state(main_state)
+    backup_ha_state.labels(instance=exporter_instance, host=backup.host).state(
+        backup_sate
+    )
     active_opnsense = None
     if main_state == "active":
         active_opnsense = main
@@ -65,13 +65,11 @@ def process_requests(main, backup, exporter_instance: str = ""):
         if bytes_received or bytes_received == 0:
             active_server_bytes_received.labels(
                 instance=exporter_instance, host=active_opnsense.host
-            )
-            active_server_bytes_received.set(bytes_received)
+            ).set(bytes_received)
         if bytes_transmitted or bytes_transmitted == 0:
             active_server_bytes_transmitted.labels(
                 instance=exporter_instance, host=active_opnsense.host
-            )
-            active_server_bytes_transmitted.set(bytes_transmitted)
+            ).set(bytes_transmitted)
 
 
 def start_server(

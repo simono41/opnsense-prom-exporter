@@ -88,6 +88,10 @@ You can setup env through `.env` file or environment variables with defined as d
 
 ## Changelog
 
+### Version 0.2.0
+
+Setup automatic release from gitlab while pushing new tag
+
 ### Version 0.1.0
 
 Initial version
