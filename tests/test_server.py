@@ -161,5 +161,45 @@ def test_process_no_active():
                     )
     main_ha_state_mock.assert_called_once_with("maintenancemode")
     backup_ha_state_mock.assert_called_once_with("unavailable")
-    active_server_bytes_received_mock.assert_called_once_with(-1)
-    active_server_bytes_transmitted_mock.assert_called_once_with(-1)
+    active_server_bytes_received_mock.assert_not_called()
+    active_server_bytes_transmitted_mock.assert_not_called()
+
+
+@responses.activate
+def test_process_with_falsy_value():
+    responses.add(
+        responses.GET,
+        f"https://{MAIN_HOST}/api/diagnostics/interface/get_vip_status/",
+        body=generate_get_vip_status_paylaod("MASTER", "MASTER", False),
+    )
+    responses.add(
+        responses.GET,
+        f"https://{BACKUP_HOST}/api/diagnostics/interface/get_vip_status/",
+        body=generate_get_vip_status_paylaod("BACKUP", "BACKUP", False),
+    )
+    responses.add(
+        responses.GET,
+        f"https://{BACKUP_HOST}/api/diagnostics/traffic/interface",
+        body=generate_diagnostics_traffic_interface_paylaod(),
+        status=404,
+    )
+    with mock.patch(
+        "opnsense_exporter.server.main_ha_state.state"
+    ) as main_ha_state_mock:
+        with mock.patch(
+            "opnsense_exporter.server.backup_ha_state.state"
+        ) as backup_ha_state_mock:
+            with mock.patch(
+                "opnsense_exporter.server.active_server_bytes_received.set"
+            ) as active_server_bytes_received_mock:
+                with mock.patch(
+                    "opnsense_exporter.server.active_server_bytes_transmitted.set"
+                ) as active_server_bytes_transmitted_mock:
+                    process_requests(
+                        OPNSenseAPI(MAIN_HOST, LOGIN, PASSWORD),
+                        OPNSenseAPI(BACKUP_HOST, LOGIN, PASSWORD),
+                    )
+    main_ha_state_mock.assert_called_once_with("active")
+    backup_ha_state_mock.assert_called_once_with("hot_standby")
+    active_server_bytes_received_mock.assert_not_called()
+    active_server_bytes_transmitted_mock.assert_not_called()

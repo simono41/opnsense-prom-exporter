@@ -12,45 +12,79 @@ load_dotenv()
 
 HA_STATES = ["active", "hot_standby", "unavailable", "maintenancemode"]
 main_ha_state = Enum(
-    "opnsense_main_ha_state", "OPNSense HA state of the MAIN server", states=HA_STATES
+    "opnsense_main_ha_state",
+    "OPNSense HA state of the MAIN server",
+    [
+        "instance",
+        "host",
+    ],
+    states=HA_STATES,
 )
 backup_ha_state = Enum(
     "opnsense_backup_ha_state",
     "OPNSense HA state of the BACKUP server",
+    [
+        "instance",
+        "host",
+    ],
     states=HA_STATES,
 )
 active_server_bytes_received = Gauge(
     "opnsense_active_server_bytes_received",
     "Active OPNSense server bytes received on WAN interface",
+    [
+        "instance",
+        "host",
+    ],
 )
 active_server_bytes_transmitted = Gauge(
     "opnsense_active_server_bytes_transmitted",
     "Active OPNSense server bytes transmitted on WAN interface",
+    [
+        "instance",
+        "host",
+    ],
 )
 
 
-def process_requests(main, backup):
+def process_requests(main, backup, exporter_instance: str = ""):
     """A dummy function that takes some time."""
     main_state = main.get_interface_vip_status()
     backup_sate = backup.get_interface_vip_status()
+    main_ha_state.labels(instance=exporter_instance, host=main.host)
     main_ha_state.state(main_state)
+    backup_ha_state.labels(instance=exporter_instance, host=backup.host)
     backup_ha_state.state(backup_sate)
-    bytes_received = None
-    bytes_transmitted = None
+    active_opnsense = None
     if main_state == "active":
-        bytes_received, bytes_transmitted = main.get_wan_trafic()
+        active_opnsense = main
     if backup_sate == "active":
-        bytes_received, bytes_transmitted = backup.get_wan_trafic()
-    active_server_bytes_received.set(bytes_received or -1)
-    active_server_bytes_transmitted.set(bytes_transmitted or -1)
+        active_opnsense = backup
+    if active_opnsense:
+        bytes_received, bytes_transmitted = active_opnsense.get_wan_trafic()
+        if bytes_received or bytes_received == 0:
+            active_server_bytes_received.labels(
+                instance=exporter_instance, host=active_opnsense.host
+            )
+            active_server_bytes_received.set(bytes_received)
+        if bytes_transmitted or bytes_transmitted == 0:
+            active_server_bytes_transmitted.labels(
+                instance=exporter_instance, host=active_opnsense.host
+            )
+            active_server_bytes_transmitted.set(bytes_transmitted)
 
 
-def start_server(main: OPNSenseAPI, backup: OPNSenseAPI, check_frequency: int = 1):
+def start_server(
+    main: OPNSenseAPI,
+    backup: OPNSenseAPI,
+    check_frequency: int = 1,
+    exporter_instance: str = "",
+):
     # Start up the server to expose the metrics.
     start_http_server(8000)
     # Generate some requests.
     while True:
-        process_requests(main, backup)
+        process_requests(main, backup, exporter_instance=exporter_instance)
         time.sleep(check_frequency)
 
 
@@ -105,7 +139,7 @@ def run():
         type=str,
         default=socket.gethostname(),
         help=(
-            "Instance name, default value computed with hostname "
+            "Exporter Instance name, default value computed with hostname "
             "where the server is running. Use to set the instance label."
         ),
     )
@@ -115,4 +149,5 @@ def run():
         OPNSenseAPI(arguments.main, arguments.user, arguments.password),
         OPNSenseAPI(arguments.backup, arguments.user, arguments.password),
         check_frequency=arguments.frequency,
+        exporter_instance=arguments.prom_instance,
     )
