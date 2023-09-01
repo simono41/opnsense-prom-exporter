@@ -2,3 +2,4 @@
 twine
 wheel
 pre-commit
+bump2version
