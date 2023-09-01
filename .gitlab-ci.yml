@@ -1,5 +1,6 @@
-# This is based on the follwing template located at:
+# This is based on the following template located at:
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
+# and other experimentations
 
 # Official language image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/python/tags/
