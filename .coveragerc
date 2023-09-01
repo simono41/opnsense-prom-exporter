@@ -1,0 +1,8 @@
+[run]
+branch = True
+omit = */tests/*
+       */__init__.py
+data_file = .coverage
+
+[xml]
+output = ./coverage.xml
