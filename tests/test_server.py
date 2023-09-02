@@ -87,7 +87,7 @@ def test_process_requests():
     )
     responses.add(
         responses.GET,
-        f"https://{MAIN_HOST}/api/diagnostics/traffic/interface",
+        f"https://{MAIN_HOST}/api/diagnostics/traffic/top/wan",
         body=generate_diagnostics_traffic_interface_paylaod(),
     )
 
@@ -121,14 +121,14 @@ def test_process_requests():
     assert backup_ha_state_mock.count_state_calls == 1
     assert backup_ha_state_mock._labels == {"instance": "", "host": BACKUP_HOST}
 
-    assert active_server_bytes_received_mock.value == 11725192686820
+    assert active_server_bytes_received_mock.value == 20538
     assert active_server_bytes_received_mock.count_set_calls == 1
     assert active_server_bytes_received_mock._labels == {
         "instance": "",
         "host": MAIN_HOST,
     }
 
-    assert active_server_bytes_transmitted_mock.value == 2489262014203
+    assert active_server_bytes_transmitted_mock.value == 10034
     assert active_server_bytes_transmitted_mock.count_set_calls == 1
     assert active_server_bytes_transmitted_mock._labels == {
         "instance": "",
@@ -150,7 +150,7 @@ def test_process_requests_backup_active():
     )
     responses.add(
         responses.GET,
-        f"https://{BACKUP_HOST}/api/diagnostics/traffic/interface",
+        f"https://{BACKUP_HOST}/api/diagnostics/traffic/top/wan",
         body=generate_diagnostics_traffic_interface_paylaod(),
     )
 
@@ -183,14 +183,14 @@ def test_process_requests_backup_active():
     assert backup_ha_state_mock.count_state_calls == 1
     assert backup_ha_state_mock._labels == {"instance": "", "host": BACKUP_HOST}
 
-    assert active_server_bytes_received_mock.value == 11725192686820
+    assert active_server_bytes_received_mock.value == 20538
     assert active_server_bytes_received_mock.count_set_calls == 1
     assert active_server_bytes_received_mock._labels == {
         "instance": "",
         "host": BACKUP_HOST,
     }
 
-    assert active_server_bytes_transmitted_mock.value == 2489262014203
+    assert active_server_bytes_transmitted_mock.value == 10034
     assert active_server_bytes_transmitted_mock.count_set_calls == 1
     assert active_server_bytes_transmitted_mock._labels == {
         "instance": "",
@@ -213,7 +213,7 @@ def test_process_no_active():
     )
     responses.add(
         responses.GET,
-        f"https://{BACKUP_HOST}/api/diagnostics/traffic/interface",
+        f"https://{BACKUP_HOST}/api/diagnostics/traffic/top/wan",
         body=generate_diagnostics_traffic_interface_paylaod(),
     )
 
@@ -265,7 +265,7 @@ def test_process_with_falsy_value():
     )
     responses.add(
         responses.GET,
-        f"https://{BACKUP_HOST}/api/diagnostics/traffic/interface",
+        f"https://{BACKUP_HOST}/api/diagnostics/traffic/top/wan",
         body=generate_diagnostics_traffic_interface_paylaod(),
         status=404,
     )

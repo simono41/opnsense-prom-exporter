@@ -54,7 +54,7 @@ class OPNSenseAPI:
 
     def get_wan_trafic(self):
         try:
-            data = self.get("/api/diagnostics/traffic/interface")
+            data = self.get("/api/diagnostics/traffic/top/wan")
         except RequestException as ex:
             logger.error(
                 "Get diagnostics traffic on WAN interface for %s host failed with the following error %r",
@@ -62,29 +62,10 @@ class OPNSenseAPI:
                 ex,
             )
             return None, None
-        return (
-            int(data["interfaces"]["wan"]["bytes received"]),
-            int(data["interfaces"]["wan"]["bytes transmitted"]),
-        )
 
-
-#    def get_server_system_status(self):
-#        # https://192.168.200.1/api/core/system/status
-#        return {
-#            "CrashReporter":
-#            {
-#                "statusCode":2,
-#                "message":"No problems were detected.",
-#                "logLocation":"/crash_reporter.php",
-#                "timestamp":"0",
-#                "status":"OK"
-#            },
-#            "Firewall":{
-#                "statusCode":2,
-#                "message":"No problems were detected.",
-#                "logLocation":"/ui/diagnostics/log/core/firewall",
-#                "timestamp":"0",
-#                "status":"OK"
-#            },
-#            "System":{"status":"OK"}
-#        }
+        received = 0
+        transmitted = 0
+        for record in data["wan"]["records"]:
+            received += record["rate_bits_in"]
+            transmitted += record["rate_bits_out"]
+        return received, transmitted

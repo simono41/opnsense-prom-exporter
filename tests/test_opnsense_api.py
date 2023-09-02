@@ -83,12 +83,12 @@ def test_get_interface_vip_status_unavailable_rest_api_error():
 def test_get_wan_traffic():
     responses.add(
         responses.GET,
-        f"https://{MAIN_HOST}/api/diagnostics/traffic/interface",
+        f"https://{MAIN_HOST}/api/diagnostics/traffic/top/wan",
         body=generate_diagnostics_traffic_interface_paylaod(),
     )
     assert OPNSenseAPI(MAIN_HOST, LOGIN, PASSWORD).get_wan_trafic() == (
-        11725192686820,
-        2489262014203,
+        20538,
+        10034,
     )
 
 
@@ -96,7 +96,7 @@ def test_get_wan_traffic():
 def test_get_wan_traffic_none():
     responses.add(
         responses.GET,
-        f"https://{MAIN_HOST}/api/diagnostics/traffic/interface",
+        f"https://{MAIN_HOST}/api/diagnostics/traffic/top/wan",
         json={"error": "not found"},
         status=404,
     )
