@@ -19,11 +19,11 @@ class OPNSenseAPI:
     def prepare_url(self, path):
         return f"https://{self.host}{path}"
 
-    def get(self, path):
+    def get(self, path, timeout=2):
         response = requests.get(
             self.prepare_url(path),
             auth=(self.login, self.password),
-            timeout=0.5,
+            timeout=timeout,
             # # as today I'm using the opnsense selfsigned certificat
             # # but we should avoid this instead trust any certificat
             verify=False,
@@ -54,7 +54,7 @@ class OPNSenseAPI:
 
     def get_wan_trafic(self):
         try:
-            data = self.get("/api/diagnostics/traffic/top/wan")
+            data = self.get("/api/diagnostics/traffic/top/wan", timeout=15)
         except RequestException as ex:
             logger.error(
                 "Get diagnostics traffic on WAN interface for %s host failed with the following error %r",

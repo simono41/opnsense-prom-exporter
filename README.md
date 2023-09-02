@@ -88,6 +88,10 @@ You can setup env through `.env` file or environment variables with defined as d
 
 ## Changelog
 
+### Version 0.4.0
+
+Higher timeout while getting WAN traffic info
+
 ### Version 0.3.0
 
 Use proper method to compute WAN traffic
