@@ -51,43 +51,52 @@ active_server_bytes_transmitted = Gauge(
 )
 
 
-def process_requests(main, backup, exporter_instance: str = ""):
-    """A dummy function that takes some time."""
-    main_state = main.get_interface_vip_status()
-    backup_sate = backup.get_interface_vip_status()
-    main_ha_state.labels(instance=exporter_instance, **main.labels).state(main_state)
-    backup_ha_state.labels(instance=exporter_instance, **backup.labels).state(
-        backup_sate
-    )
-    active_opnsense = None
-    if main_state == "active":
-        active_opnsense = main
-    if backup_sate == "active":
-        active_opnsense = backup
-    if active_opnsense:
-        bytes_received, bytes_transmitted = active_opnsense.get_wan_trafic()
-        if bytes_received or bytes_received == 0:
-            active_server_bytes_received.labels(
-                instance=exporter_instance, **active_opnsense.labels
-            ).set(bytes_received)
-        if bytes_transmitted or bytes_transmitted == 0:
-            active_server_bytes_transmitted.labels(
-                instance=exporter_instance, **active_opnsense.labels
-            ).set(bytes_transmitted)
+class OPNSensePrometheusExporter:
+    def __init__(
+        self,
+        main: OPNSenseAPI,
+        backup: OPNSenseAPI,
+        exporter_instance: str = "",
+        check_frequency: int = 1,
+    ):
+        self.main = main
+        self.backup = backup
+        self.exporter_instance = exporter_instance
+        self.check_frequency = check_frequency
 
+    def process_requests(self):
+        """A dummy function that takes some time."""
+        main_state = self.main.get_interface_vip_status()
+        backup_sate = self.backup.get_interface_vip_status()
+        main_ha_state.labels(instance=self.exporter_instance, **self.main.labels).state(
+            main_state
+        )
+        backup_ha_state.labels(
+            instance=self.exporter_instance, **self.backup.labels
+        ).state(backup_sate)
+        active_opnsense = None
+        if main_state == "active":
+            active_opnsense = self.main
+        if backup_sate == "active":
+            active_opnsense = self.backup
+        if active_opnsense:
+            bytes_received, bytes_transmitted = active_opnsense.get_wan_trafic()
+            if bytes_received or bytes_received == 0:
+                active_server_bytes_received.labels(
+                    instance=self.exporter_instance, **active_opnsense.labels
+                ).set(bytes_received)
+            if bytes_transmitted or bytes_transmitted == 0:
+                active_server_bytes_transmitted.labels(
+                    instance=self.exporter_instance, **active_opnsense.labels
+                ).set(bytes_transmitted)
 
-def start_server(
-    main: OPNSenseAPI,
-    backup: OPNSenseAPI,
-    check_frequency: int = 1,
-    exporter_instance: str = "",
-):
-    # Start up the server to expose the metrics.
-    start_http_server(8000)
-    # Generate some requests.
-    while True:
-        process_requests(main, backup, exporter_instance=exporter_instance)
-        time.sleep(check_frequency)
+    def start_server(self):
+        # Start up the server to expose the metrics.
+        start_http_server(8000)
+        # Generate some requests.
+        while True:
+            self.process_requests()
+            time.sleep(self.check_frequency)
 
 
 def run():
@@ -147,7 +156,8 @@ def run():
     )
 
     arguments = parser.parse_args()
-    start_server(
+
+    server = OPNSensePrometheusExporter(
         OPNSenseAPI(
             OPNSenseRole.MAIN, arguments.main, arguments.user, arguments.password
         ),
@@ -157,3 +167,7 @@ def run():
         check_frequency=arguments.frequency,
         exporter_instance=arguments.prom_instance,
     )
+    server.start_server()
+
+    # return the server instance mainly for test purpose
+    return server

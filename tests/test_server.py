@@ -3,7 +3,7 @@ from unittest import mock
 import responses
 
 from opnsense_exporter.opnsense_api import OPNSenseAPI, OPNSenseRole
-from opnsense_exporter.server import process_requests, run
+from opnsense_exporter.server import OPNSensePrometheusExporter, run
 
 from .common import (
     BACKUP_HOST,
@@ -41,7 +41,7 @@ class FakePromGauge(FakePromMetric):
         self.value = value
 
 
-@mock.patch("opnsense_exporter.server.start_server")
+@mock.patch("opnsense_exporter.server.OPNSensePrometheusExporter.start_server")
 def test_parser(server_mock):
     with mock.patch(
         "sys.argv",
@@ -61,16 +61,18 @@ def test_parser(server_mock):
             "server-hostname-instance",
         ],
     ):
-        run()
+        server = run()
         server_mock.assert_called_once()
-        main, bck = server_mock.call_args.args
-        assert main.login == "user-test"
-        assert bck.login == "user-test"
-        assert main.password == "pwd-test"
-        assert bck.password == "pwd-test"
-        assert main.host == "main.host"
-        assert bck.host == "backup.host"
-        assert server_mock.call_args.kwargs["check_frequency"] == 15
+
+        assert server.main.role == OPNSenseRole.MAIN
+        assert server.main.host == "main.host"
+        assert server.main.login == "user-test"
+        assert server.main.password == "pwd-test"
+        assert server.backup.role == OPNSenseRole.BACKUP
+        assert server.backup.host == "backup.host"
+        assert server.backup.login == "user-test"
+        assert server.backup.password == "pwd-test"
+        assert server.check_frequency == 15
 
 
 @responses.activate
@@ -108,10 +110,10 @@ def test_process_requests():
                     "opnsense_exporter.server.active_server_bytes_transmitted",
                     new=active_server_bytes_transmitted_mock,
                 ):
-                    process_requests(
+                    OPNSensePrometheusExporter(
                         OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
                         OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
-                    )
+                    ).process_requests()
 
     assert main_ha_state_mock._state == "active"
     assert main_ha_state_mock.count_state_calls == 1
@@ -181,10 +183,10 @@ def test_process_requests_backup_active():
                     "opnsense_exporter.server.active_server_bytes_transmitted",
                     new=active_server_bytes_transmitted_mock,
                 ):
-                    process_requests(
+                    OPNSensePrometheusExporter(
                         OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
                         OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
-                    )
+                    ).process_requests()
     assert main_ha_state_mock._state == "maintenancemode"
     assert main_ha_state_mock.count_state_calls == 1
     assert main_ha_state_mock._labels == {
@@ -254,10 +256,10 @@ def test_process_no_active():
                     "opnsense_exporter.server.active_server_bytes_transmitted",
                     new=active_server_bytes_transmitted_mock,
                 ):
-                    process_requests(
+                    OPNSensePrometheusExporter(
                         OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
                         OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
-                    )
+                    ).process_requests()
 
     assert main_ha_state_mock._state == "maintenancemode"
     assert main_ha_state_mock.count_state_calls == 1
@@ -315,10 +317,10 @@ def test_process_with_falsy_value():
                     "opnsense_exporter.server.active_server_bytes_transmitted",
                     new=active_server_bytes_transmitted_mock,
                 ):
-                    process_requests(
+                    OPNSensePrometheusExporter(
                         OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
                         OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
-                    )
+                    ).process_requests()
     assert main_ha_state_mock._state == "active"
     assert main_ha_state_mock.count_state_calls == 1
     assert main_ha_state_mock._labels == {
