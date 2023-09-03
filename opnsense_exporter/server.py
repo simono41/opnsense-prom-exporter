@@ -31,22 +31,15 @@ backup_ha_state = Enum(
     ],
     states=HA_STATES,
 )
-active_server_bytes_received = Gauge(
-    "opnsense_active_server_bytes_received",
-    "Active OPNSense server bytes received on WAN interface",
+opnsense_active_server_traffic_rate = Gauge(
+    "opnsense_active_server_traffic_rate",
+    "Active OPNSense server bytes in/out per interface",
     [
         "instance",
         "host",
         "role",
-    ],
-)
-active_server_bytes_transmitted = Gauge(
-    "opnsense_active_server_bytes_transmitted",
-    "Active OPNSense server bytes transmitted on WAN interface",
-    [
-        "instance",
-        "host",
-        "role",
+        "interface",
+        "metric",
     ],
 )
 
@@ -56,11 +49,13 @@ class OPNSensePrometheusExporter:
         self,
         main: OPNSenseAPI,
         backup: OPNSenseAPI,
+        interfaces,
         exporter_instance: str = "",
         check_frequency: int = 1,
     ):
         self.main = main
         self.backup = backup
+        self.interfaces = interfaces
         self.exporter_instance = exporter_instance
         self.check_frequency = check_frequency
 
@@ -80,15 +75,13 @@ class OPNSensePrometheusExporter:
         if backup_sate == "active":
             active_opnsense = self.backup
         if active_opnsense:
-            bytes_received, bytes_transmitted = active_opnsense.get_wan_trafic()
-            if bytes_received or bytes_received == 0:
-                active_server_bytes_received.labels(
-                    instance=self.exporter_instance, **active_opnsense.labels
-                ).set(bytes_received)
-            if bytes_transmitted or bytes_transmitted == 0:
-                active_server_bytes_transmitted.labels(
-                    instance=self.exporter_instance, **active_opnsense.labels
-                ).set(bytes_transmitted)
+            for traffic in active_opnsense.get_traffic(self.interfaces):
+                if traffic.value:
+                    opnsense_active_server_traffic_rate.labels(
+                        instance=self.exporter_instance,
+                        **active_opnsense.labels,
+                        **traffic.labels
+                    ).set(traffic.value)
 
     def start_server(self):
         # Start up the server to expose the metrics.
@@ -137,6 +130,14 @@ def run():
         help="OPNsense user. Expect to be the same on MAIN and BACKUP servers",
     )
     parser.add_argument(
+        "--opnsense-interfaces",
+        "-i",
+        type=str,
+        dest="interfaces",
+        default=os.environ.get("OPNSENSE_INTERFACES", "wan,lan"),
+        help="OPNsense interfaces (coma separated) list to export trafic rates (bytes/s)",
+    )
+    parser.add_argument(
         "--opnsense-password",
         "-p",
         type=str,
@@ -164,6 +165,7 @@ def run():
         OPNSenseAPI(
             OPNSenseRole.BACKUP, arguments.backup, arguments.user, arguments.password
         ),
+        arguments.interfaces,
         check_frequency=arguments.frequency,
         exporter_instance=arguments.prom_instance,
     )

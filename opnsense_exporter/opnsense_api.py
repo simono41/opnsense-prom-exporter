@@ -7,6 +7,37 @@ from requests import RequestException
 logger = logging.getLogger(__name__)
 
 
+class OPNSenseTrafficMetric(Enum):
+    IN = "rate_bits_in"
+    OUT = "rate_bits_out"
+
+
+class OPNSenseTraffic:
+    interface: str = None
+    metric: OPNSenseTrafficMetric = None
+    value: int = 0
+
+    def __init__(self, interface: str, metric: OPNSenseTrafficMetric, value: int = 0):
+        self.value = value
+        self.interface = interface
+        self.metric = metric
+
+    @property
+    def labels(self):
+        return {"metric": self.metric.value, "interface": self.interface}
+
+    def __eq__(self, opn_traffic):
+        """Used by unittest to assert expected values"""
+        return (
+            self.interface == opn_traffic.interface
+            and self.metric == opn_traffic.metric
+            and self.value == opn_traffic.value
+        )
+
+    def __repr__(self):
+        return f"{self.interface} - {self.metric} = {self.value}"
+
+
 class OPNSenseRole(Enum):
     MAIN = "main"
     BACKUP = "backup"
@@ -67,20 +98,23 @@ class OPNSenseAPI:
         )
         return "unavailable"
 
-    def get_wan_trafic(self):
+    def get_traffic(self, interfaces):
         try:
-            data = self.get("/api/diagnostics/traffic/top/wan", timeout=15)
+            data = self.get(f"/api/diagnostics/traffic/top/{interfaces}", timeout=15)
         except RequestException as ex:
             logger.error(
-                "Get diagnostics traffic on WAN interface for %s host failed with the following error %r",
+                "Get diagnostics traffic on %s interface(s) for %s host failed with the following error %r",
+                interfaces,
                 self.host,
                 ex,
             )
-            return None, None
-
-        received = 0
-        transmitted = 0
-        for record in data.get("wan", []).get("records", []):
-            received += record.get("rate_bits_in", 0)
-            transmitted += record.get("rate_bits_out", 0)
-        return received, transmitted
+            return []
+        traffics = []
+        for interface in interfaces.split(","):
+            traffic_in = OPNSenseTraffic(interface, OPNSenseTrafficMetric.IN)
+            traffic_out = OPNSenseTraffic(interface, OPNSenseTrafficMetric.OUT)
+            for record in data.get(interface, []).get("records", []):
+                traffic_in.value += record.get(OPNSenseTrafficMetric.IN.value, 0)
+                traffic_out.value += record.get(OPNSenseTrafficMetric.OUT.value, 0)
+            traffics.extend([traffic_in, traffic_out])
+        return traffics

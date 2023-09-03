@@ -1,6 +1,11 @@
 import responses
 
-from opnsense_exporter.opnsense_api import OPNSenseAPI, OPNSenseRole
+from opnsense_exporter.opnsense_api import (
+    OPNSenseAPI,
+    OPNSenseRole,
+    OPNSenseTraffic,
+    OPNSenseTrafficMetric,
+)
 
 from .common import (
     BACKUP_HOST,
@@ -92,33 +97,35 @@ def test_get_interface_vip_status_unavailable_rest_api_error():
 
 
 @responses.activate
-def test_get_wan_traffic():
+def test_get_traffic():
     responses.add(
         responses.GET,
-        f"https://{MAIN_HOST}/api/diagnostics/traffic/top/wan",
+        f"https://{MAIN_HOST}/api/diagnostics/traffic/top/wan,lan",
         body=generate_diagnostics_traffic_interface_paylaod(),
     )
-    assert OPNSenseAPI(
-        OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
-    ).get_wan_trafic() == (
-        20538,
-        10034,
-    )
+    assert OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD).get_traffic(
+        "wan,lan"
+    ) == [
+        OPNSenseTraffic("wan", OPNSenseTrafficMetric.IN, value=101026),
+        OPNSenseTraffic("wan", OPNSenseTrafficMetric.OUT, value=86020),
+        OPNSenseTraffic("lan", OPNSenseTrafficMetric.IN, value=188490),
+        OPNSenseTraffic("lan", OPNSenseTrafficMetric.OUT, value=952),
+    ]
 
 
 @responses.activate
-def test_get_wan_traffic_none():
+def test_get_traffic_none():
     responses.add(
         responses.GET,
-        f"https://{MAIN_HOST}/api/diagnostics/traffic/top/wan",
+        f"https://{MAIN_HOST}/api/diagnostics/traffic/top/test-not-found",
         json={"error": "not found"},
         status=404,
     )
-    assert OPNSenseAPI(
-        OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
-    ).get_wan_trafic() == (
-        None,
-        None,
+    assert (
+        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD).get_traffic(
+            "test-not-found"
+        )
+        == []
     )
 
 

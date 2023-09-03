@@ -26,7 +26,7 @@ This exporter gives following metrics, all metrics received following labels:
 
 - `instance`: by default this is set with the hostname where is running this exporter service
 - `host`: the host of the OPNSense
-- `role`: `main` or `backup`
+- `role`: `main` or `backup` to determine the OPNSense server role.
 
 ### Enums
 
@@ -35,8 +35,10 @@ This exporter gives following metrics, all metrics received following labels:
 
 ### Gauges
 
-- `opnsense_active_server_bytes_received`: Active OPNSense server bytes received on WAN interface
-- `opnsense_active_server_bytes_transmitted`: Active OPNSense server bytes transmitted on WAN interface
+- `opnsense_active_server_traffic_rate`: Active OPNSense server traffic rate per interfaces bits/s
+  add following labels:
+  - **interface**: the interface to export (values given using `--opnsense-interfaces`)
+  - **metric**: the metric name (as today one of `rate_bits_in`, `rate_bits_in`)
 
 ## Usage
 
@@ -47,6 +49,7 @@ opnsense-exporter --help
 usage: opnsense-exporter [-h] [--check-frequency-seconds FREQUENCY]
                          [--main-host MAIN] [--backup-host BACKUP]
                          [--opnsense-user USER]
+                         [--opnsense-interfaces INTERFACES]
                          [--opnsense-password PASSWORD]
                          [--prometheus-instance PROM_INSTANCE]
 
@@ -61,17 +64,21 @@ optional arguments:
                         MAIN OPNsense server that should be in `active`
                         state in normal configuration.
   --backup-host BACKUP, -b BACKUP
-                        BACKUP OPNsense server that should be
-                        `hot_standby` state in normal configuration.
+                        BACKUP OPNsense server that should be `hot_standby`
+                        state in normal configuration.
   --opnsense-user USER, -u USER
                         OPNsense user. Expect to be the same on MAIN and
                         BACKUP servers
+  --opnsense-interfaces INTERFACES, -i INTERFACES
+                        OPNsense interfaces (coma separated) list to export
+                        trafic rates (bytes/s) (default: wan,lan)
   --opnsense-password PASSWORD, -p PASSWORD
                         OPNsense password. Expect to be the same on MAIN
                         and BACKUP servers
   --prometheus-instance PROM_INSTANCE
-                        Exporter Instance name, default value computed
-                        with hostname where the server is running. Use to
+                        Exporter Instance name, default value computed with
+                        hostname where the server is running. Use to set
+                        the instance label. (default: my-opnsense-prom-exporter-server)
 ```
 
 You can setup env through `.env` file or environment variables with defined as default values
@@ -86,8 +93,6 @@ You can setup env through `.env` file or environment variables with defined as d
 
 ## Roadmap
 
-- merge `opnsense_active_server_bytes_received` and `opnsense_active_server_bytes_transmitted`
-  metrics adding labels to distinguish rates transmitted and rate received
 - allow to configure interfaces to get traffic rates for lan,wan and/or other names
 - refactor server in a class to avoid transmitted params over methods
 - allow to change the listening port (today it force using `8000`)
@@ -96,22 +101,26 @@ You can setup env through `.env` file or environment variables with defined as d
 
 ## Changelog
 
-### Version 0.0.5 (UNRELEASED)
+### Version 0.5.0 (UNRELEASED)
 
-* add role label in metrics
+- add role label in metrics
+- all to configure supervised interfaces using `--opnsense-interfaces`
+- replace `active_server_bytes_received` and
+  `active_server_bytes_transmitted` by
+  `opnsense_active_server_traffic_rate`
 
 ### Version 0.4.0 (2023-09-02)
 
-* Higher timeout while getting WAN traffic info
+- Higher timeout while getting WAN traffic info
 
 ### Version 0.3.0 (2023-09-02)
 
-* Use proper method to compute WAN traffic
+- Use proper method to compute WAN traffic
 
 ### Version 0.2.0 (2023-09-01)
 
-* Setup automatic release from gitlab while pushing new tag
+- Setup automatic release from gitlab while pushing new tag
 
 ### Version 0.1.0 (2023-09-01)
 
-* Initial version
+- Initial version

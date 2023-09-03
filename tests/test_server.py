@@ -1,3 +1,4 @@
+from typing import List
 from unittest import mock
 
 import responses
@@ -17,28 +18,54 @@ from .common import (
 
 class FakePromMetric:
     _labels = {}
+    _labels_calls = None
+
+    def __init__(self):
+        self._labels = {}
+        self._labels_calls = []
+
+    @property
+    def count_labels_calls(self) -> int:
+        return len(self._labels_calls)
 
     def labels(self, *args, **kwargs):
         self._labels = kwargs
+        self._labels_calls.append(kwargs)
         return self
 
 
 class FakePromEnum(FakePromMetric):
-    _state = None
-    count_state_calls = 0
+    _state: str = None
+    _state_calls: List[str] = []
 
-    def state(self, state):
-        self.count_state_calls += 1
+    def __init__(self):
+        super().__init__()
+        self._state_calls = []
+
+    @property
+    def count_state_calls(self) -> int:
+        return len(self._state_calls)
+
+    def state(self, state: str):
         self._state = state
+        self._state_calls.append(state)
 
 
 class FakePromGauge(FakePromMetric):
-    value = None
-    count_set_calls = 0
+    _value: int = None
+    _set_calls: List[int] = []
 
-    def set(self, value):
-        self.count_set_calls += 1
-        self.value = value
+    def __init__(self):
+        super().__init__()
+        self._set_calls = []
+
+    @property
+    def count_set_calls(self) -> int:
+        return len(self._set_calls)
+
+    def set(self, value: int):
+        self._value = value
+        self._set_calls.append(value)
 
 
 @mock.patch("opnsense_exporter.server.OPNSensePrometheusExporter.start_server")
@@ -57,6 +84,8 @@ def test_parser(server_mock):
             "user-test",
             "-p",
             "pwd-test",
+            "-i",
+            "efg,hij",
             "--prometheus-instance",
             "server-hostname-instance",
         ],
@@ -73,6 +102,7 @@ def test_parser(server_mock):
         assert server.backup.login == "user-test"
         assert server.backup.password == "pwd-test"
         assert server.check_frequency == 15
+        assert server.interfaces == "efg,hij"
 
 
 @responses.activate
@@ -95,28 +125,24 @@ def test_process_requests():
 
     main_ha_state_mock = FakePromEnum()
     backup_ha_state_mock = FakePromEnum()
-    active_server_bytes_received_mock = FakePromGauge()
-    active_server_bytes_transmitted_mock = FakePromGauge()
+    opnsense_active_server_traffic_rate_mock = FakePromGauge()
 
     with mock.patch("opnsense_exporter.server.main_ha_state", new=main_ha_state_mock):
         with mock.patch(
             "opnsense_exporter.server.backup_ha_state", new=backup_ha_state_mock
         ):
             with mock.patch(
-                "opnsense_exporter.server.active_server_bytes_received",
-                new=active_server_bytes_received_mock,
+                "opnsense_exporter.server.opnsense_active_server_traffic_rate",
+                new=opnsense_active_server_traffic_rate_mock,
             ):
-                with mock.patch(
-                    "opnsense_exporter.server.active_server_bytes_transmitted",
-                    new=active_server_bytes_transmitted_mock,
-                ):
-                    OPNSensePrometheusExporter(
-                        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
-                        OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
-                    ).process_requests()
+                OPNSensePrometheusExporter(
+                    OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
+                    OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
+                    "wan",
+                ).process_requests()
 
     assert main_ha_state_mock._state == "active"
-    assert main_ha_state_mock.count_state_calls == 1
+    assert main_ha_state_mock.count_state_calls == 1, main_ha_state_mock._state_calls
     assert main_ha_state_mock._labels == {
         "instance": "",
         "host": MAIN_HOST,
@@ -131,21 +157,24 @@ def test_process_requests():
         "role": "backup",
     }
 
-    assert active_server_bytes_received_mock.value == 20538
-    assert active_server_bytes_received_mock.count_set_calls == 1
-    assert active_server_bytes_received_mock._labels == {
-        "instance": "",
-        "host": MAIN_HOST,
-        "role": "main",
-    }
-
-    assert active_server_bytes_transmitted_mock.value == 10034
-    assert active_server_bytes_transmitted_mock.count_set_calls == 1
-    assert active_server_bytes_transmitted_mock._labels == {
-        "instance": "",
-        "host": MAIN_HOST,
-        "role": "main",
-    }
+    assert opnsense_active_server_traffic_rate_mock.count_set_calls == 2
+    assert opnsense_active_server_traffic_rate_mock._labels_calls == [
+        {
+            "instance": "",
+            "host": MAIN_HOST,
+            "role": "main",
+            "interface": "wan",
+            "metric": "rate_bits_in",
+        },
+        {
+            "instance": "",
+            "host": MAIN_HOST,
+            "role": "main",
+            "interface": "wan",
+            "metric": "rate_bits_out",
+        },
+    ]
+    assert opnsense_active_server_traffic_rate_mock._set_calls == [101026, 86020]
 
 
 @responses.activate
@@ -168,25 +197,21 @@ def test_process_requests_backup_active():
 
     main_ha_state_mock = FakePromEnum()
     backup_ha_state_mock = FakePromEnum()
-    active_server_bytes_received_mock = FakePromGauge()
-    active_server_bytes_transmitted_mock = FakePromGauge()
+    opnsense_active_server_traffic_rate_mock = FakePromGauge()
 
     with mock.patch("opnsense_exporter.server.main_ha_state", new=main_ha_state_mock):
         with mock.patch(
             "opnsense_exporter.server.backup_ha_state", new=backup_ha_state_mock
         ):
             with mock.patch(
-                "opnsense_exporter.server.active_server_bytes_received",
-                new=active_server_bytes_received_mock,
+                "opnsense_exporter.server.opnsense_active_server_traffic_rate",
+                new=opnsense_active_server_traffic_rate_mock,
             ):
-                with mock.patch(
-                    "opnsense_exporter.server.active_server_bytes_transmitted",
-                    new=active_server_bytes_transmitted_mock,
-                ):
-                    OPNSensePrometheusExporter(
-                        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
-                        OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
-                    ).process_requests()
+                OPNSensePrometheusExporter(
+                    OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
+                    OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
+                    "wan",
+                ).process_requests()
     assert main_ha_state_mock._state == "maintenancemode"
     assert main_ha_state_mock.count_state_calls == 1
     assert main_ha_state_mock._labels == {
@@ -203,21 +228,24 @@ def test_process_requests_backup_active():
         "role": "backup",
     }
 
-    assert active_server_bytes_received_mock.value == 20538
-    assert active_server_bytes_received_mock.count_set_calls == 1
-    assert active_server_bytes_received_mock._labels == {
-        "instance": "",
-        "host": BACKUP_HOST,
-        "role": "backup",
-    }
-
-    assert active_server_bytes_transmitted_mock.value == 10034
-    assert active_server_bytes_transmitted_mock.count_set_calls == 1
-    assert active_server_bytes_transmitted_mock._labels == {
-        "instance": "",
-        "host": BACKUP_HOST,
-        "role": "backup",
-    }
+    assert opnsense_active_server_traffic_rate_mock.count_set_calls == 2
+    opnsense_active_server_traffic_rate_mock._labels_calls == [
+        {
+            "instance": "",
+            "host": BACKUP_HOST,
+            "role": "backup",
+            "interface": "wan",
+            "metric": "rate_bits_in",
+        },
+        {
+            "instance": "",
+            "host": BACKUP_HOST,
+            "role": "backup",
+            "interface": "wan",
+            "metric": "rate_bits_out",
+        },
+    ]
+    assert opnsense_active_server_traffic_rate_mock._set_calls == [101026, 86020]
 
 
 @responses.activate
@@ -241,25 +269,21 @@ def test_process_no_active():
 
     main_ha_state_mock = FakePromEnum()
     backup_ha_state_mock = FakePromEnum()
-    active_server_bytes_received_mock = FakePromGauge()
-    active_server_bytes_transmitted_mock = FakePromGauge()
+    opnsense_active_server_traffic_rate_mock = FakePromGauge()
 
     with mock.patch("opnsense_exporter.server.main_ha_state", new=main_ha_state_mock):
         with mock.patch(
             "opnsense_exporter.server.backup_ha_state", new=backup_ha_state_mock
         ):
             with mock.patch(
-                "opnsense_exporter.server.active_server_bytes_received",
-                new=active_server_bytes_received_mock,
+                "opnsense_exporter.server.opnsense_active_server_traffic_rate",
+                new=opnsense_active_server_traffic_rate_mock,
             ):
-                with mock.patch(
-                    "opnsense_exporter.server.active_server_bytes_transmitted",
-                    new=active_server_bytes_transmitted_mock,
-                ):
-                    OPNSensePrometheusExporter(
-                        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
-                        OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
-                    ).process_requests()
+                OPNSensePrometheusExporter(
+                    OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
+                    OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
+                    "wan",
+                ).process_requests()
 
     assert main_ha_state_mock._state == "maintenancemode"
     assert main_ha_state_mock.count_state_calls == 1
@@ -277,8 +301,7 @@ def test_process_no_active():
         "role": "backup",
     }
 
-    assert active_server_bytes_received_mock.count_set_calls == 0
-    assert active_server_bytes_transmitted_mock.count_set_calls == 0
+    assert opnsense_active_server_traffic_rate_mock.count_set_calls == 0
 
 
 @responses.activate
@@ -302,25 +325,21 @@ def test_process_with_falsy_value():
 
     main_ha_state_mock = FakePromEnum()
     backup_ha_state_mock = FakePromEnum()
-    active_server_bytes_received_mock = FakePromGauge()
-    active_server_bytes_transmitted_mock = FakePromGauge()
+    opnsense_active_server_traffic_rate_mock = FakePromGauge()
 
     with mock.patch("opnsense_exporter.server.main_ha_state", new=main_ha_state_mock):
         with mock.patch(
             "opnsense_exporter.server.backup_ha_state", new=backup_ha_state_mock
         ):
             with mock.patch(
-                "opnsense_exporter.server.active_server_bytes_received",
-                new=active_server_bytes_received_mock,
+                "opnsense_exporter.server.opnsense_active_server_traffic_rate",
+                new=opnsense_active_server_traffic_rate_mock,
             ):
-                with mock.patch(
-                    "opnsense_exporter.server.active_server_bytes_transmitted",
-                    new=active_server_bytes_transmitted_mock,
-                ):
-                    OPNSensePrometheusExporter(
-                        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
-                        OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
-                    ).process_requests()
+                OPNSensePrometheusExporter(
+                    OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
+                    OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
+                    "wan",
+                ).process_requests()
     assert main_ha_state_mock._state == "active"
     assert main_ha_state_mock.count_state_calls == 1
     assert main_ha_state_mock._labels == {
@@ -337,5 +356,4 @@ def test_process_with_falsy_value():
         "role": "backup",
     }
 
-    assert active_server_bytes_received_mock.count_set_calls == 0
-    assert active_server_bytes_transmitted_mock.count_set_calls == 0
+    assert opnsense_active_server_traffic_rate_mock.count_set_calls == 0
