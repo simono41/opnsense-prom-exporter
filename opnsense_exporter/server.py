@@ -15,33 +15,6 @@ load_dotenv()
 HA_STATES = [enum.value for enum in list(OPNSenseHAState)]
 
 
-class DeprecatedPromEnum(Enum, DeprecationWarning):
-    def state(self, *args, **kwargs):
-        super().state(*args, **kwargs)
-        logger.warning("This metric %s will be removed in v1.0.0", self._name)
-
-
-main_ha_state = DeprecatedPromEnum(
-    "opnsense_main_ha_state",
-    "OPNSense HA state of the MAIN server",
-    [
-        "instance",
-        "host",
-        "role",
-    ],
-    states=HA_STATES,
-)
-backup_ha_state = DeprecatedPromEnum(
-    "opnsense_backup_ha_state",
-    "OPNSense HA state of the BACKUP server",
-    [
-        "instance",
-        "host",
-        "role",
-    ],
-    states=HA_STATES,
-)
-
 opnsense_server_ha_state = Enum(
     "opnsense_server_ha_state",
     "OPNSense server HA state",
@@ -85,12 +58,6 @@ class OPNSensePrometheusExporter:
         """A dummy function that takes some time."""
         main_state = self.main.get_interface_vip_status()
         backup_sate = self.backup.get_interface_vip_status()
-        main_ha_state.labels(instance=self.exporter_instance, **self.main.labels).state(
-            main_state.value
-        )
-        backup_ha_state.labels(
-            instance=self.exporter_instance, **self.backup.labels
-        ).state(backup_sate.value)
         opnsense_server_ha_state.labels(
             instance=self.exporter_instance, **self.main.labels
         ).state(main_state.value)
@@ -111,9 +78,10 @@ class OPNSensePrometheusExporter:
                         **traffic.labels
                     ).set(traffic.value)
 
-    def start_server(self):
+    def start_server(self, port=8000):
         # Start up the server to expose the metrics.
-        start_http_server(8000)
+        start_http_server(port)
+        logger.info("listen port %s", port)
         # Generate some requests.
         while True:
             self.process_requests()

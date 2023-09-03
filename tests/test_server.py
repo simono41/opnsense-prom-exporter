@@ -123,28 +123,22 @@ def test_process_requests():
         body=generate_diagnostics_traffic_interface_paylaod(),
     )
 
-    main_ha_state_mock = FakePromEnum()
-    backup_ha_state_mock = FakePromEnum()
     opnsense_server_ha_state_mock = FakePromEnum()
     opnsense_active_server_traffic_rate_mock = FakePromGauge()
 
-    with mock.patch("opnsense_exporter.server.main_ha_state", new=main_ha_state_mock):
+    with mock.patch(
+        "opnsense_exporter.server.opnsense_server_ha_state",
+        new=opnsense_server_ha_state_mock,
+    ):
         with mock.patch(
-            "opnsense_exporter.server.backup_ha_state", new=backup_ha_state_mock
+            "opnsense_exporter.server.opnsense_active_server_traffic_rate",
+            new=opnsense_active_server_traffic_rate_mock,
         ):
-            with mock.patch(
-                "opnsense_exporter.server.opnsense_server_ha_state",
-                new=opnsense_server_ha_state_mock,
-            ):
-                with mock.patch(
-                    "opnsense_exporter.server.opnsense_active_server_traffic_rate",
-                    new=opnsense_active_server_traffic_rate_mock,
-                ):
-                    OPNSensePrometheusExporter(
-                        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
-                        OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
-                        "wan",
-                    ).process_requests()
+            OPNSensePrometheusExporter(
+                OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
+                OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
+                "wan",
+            ).process_requests()
 
     assert opnsense_server_ha_state_mock.count_state_calls == 2
     assert opnsense_server_ha_state_mock._labels_calls == [
@@ -160,21 +154,6 @@ def test_process_requests():
         },
     ]
     assert opnsense_server_ha_state_mock._state_calls == ["active", "hot_standby"]
-    assert main_ha_state_mock._state == "active"
-    assert main_ha_state_mock.count_state_calls == 1, main_ha_state_mock._state_calls
-    assert main_ha_state_mock._labels == {
-        "instance": "",
-        "host": MAIN_HOST,
-        "role": "main",
-    }
-
-    assert backup_ha_state_mock._state == "hot_standby"
-    assert backup_ha_state_mock.count_state_calls == 1
-    assert backup_ha_state_mock._labels == {
-        "instance": "",
-        "host": BACKUP_HOST,
-        "role": "backup",
-    }
 
     assert opnsense_active_server_traffic_rate_mock.count_set_calls == 2
     assert opnsense_active_server_traffic_rate_mock._labels_calls == [
@@ -214,28 +193,22 @@ def test_process_requests_backup_active():
         body=generate_diagnostics_traffic_interface_paylaod(),
     )
 
-    main_ha_state_mock = FakePromEnum()
-    backup_ha_state_mock = FakePromEnum()
     opnsense_server_ha_state_mock = FakePromEnum()
     opnsense_active_server_traffic_rate_mock = FakePromGauge()
 
-    with mock.patch("opnsense_exporter.server.main_ha_state", new=main_ha_state_mock):
+    with mock.patch(
+        "opnsense_exporter.server.opnsense_server_ha_state",
+        new=opnsense_server_ha_state_mock,
+    ):
         with mock.patch(
-            "opnsense_exporter.server.backup_ha_state", new=backup_ha_state_mock
+            "opnsense_exporter.server.opnsense_active_server_traffic_rate",
+            new=opnsense_active_server_traffic_rate_mock,
         ):
-            with mock.patch(
-                "opnsense_exporter.server.opnsense_server_ha_state",
-                new=opnsense_server_ha_state_mock,
-            ):
-                with mock.patch(
-                    "opnsense_exporter.server.opnsense_active_server_traffic_rate",
-                    new=opnsense_active_server_traffic_rate_mock,
-                ):
-                    OPNSensePrometheusExporter(
-                        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
-                        OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
-                        "wan",
-                    ).process_requests()
+            OPNSensePrometheusExporter(
+                OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
+                OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
+                "wan",
+            ).process_requests()
 
     assert opnsense_server_ha_state_mock.count_state_calls == 2
     assert opnsense_server_ha_state_mock._labels_calls == [
@@ -251,21 +224,6 @@ def test_process_requests_backup_active():
         },
     ]
     assert opnsense_server_ha_state_mock._state_calls == ["maintenancemode", "active"]
-    assert main_ha_state_mock._state == "maintenancemode"
-    assert main_ha_state_mock.count_state_calls == 1
-    assert main_ha_state_mock._labels == {
-        "instance": "",
-        "host": MAIN_HOST,
-        "role": "main",
-    }
-
-    assert backup_ha_state_mock._state == "active"
-    assert backup_ha_state_mock.count_state_calls == 1
-    assert backup_ha_state_mock._labels == {
-        "instance": "",
-        "host": BACKUP_HOST,
-        "role": "backup",
-    }
 
     assert opnsense_active_server_traffic_rate_mock.count_set_calls == 2
     opnsense_active_server_traffic_rate_mock._labels_calls == [
@@ -306,28 +264,22 @@ def test_process_no_active():
         body=generate_diagnostics_traffic_interface_paylaod(),
     )
 
-    main_ha_state_mock = FakePromEnum()
-    backup_ha_state_mock = FakePromEnum()
     opnsense_server_ha_state_mock = FakePromEnum()
     opnsense_active_server_traffic_rate_mock = FakePromGauge()
 
-    with mock.patch("opnsense_exporter.server.main_ha_state", new=main_ha_state_mock):
+    with mock.patch(
+        "opnsense_exporter.server.opnsense_server_ha_state",
+        new=opnsense_server_ha_state_mock,
+    ):
         with mock.patch(
-            "opnsense_exporter.server.backup_ha_state", new=backup_ha_state_mock
+            "opnsense_exporter.server.opnsense_active_server_traffic_rate",
+            new=opnsense_active_server_traffic_rate_mock,
         ):
-            with mock.patch(
-                "opnsense_exporter.server.opnsense_server_ha_state",
-                new=opnsense_server_ha_state_mock,
-            ):
-                with mock.patch(
-                    "opnsense_exporter.server.opnsense_active_server_traffic_rate",
-                    new=opnsense_active_server_traffic_rate_mock,
-                ):
-                    OPNSensePrometheusExporter(
-                        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
-                        OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
-                        "wan",
-                    ).process_requests()
+            OPNSensePrometheusExporter(
+                OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
+                OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
+                "wan",
+            ).process_requests()
 
     assert opnsense_server_ha_state_mock.count_state_calls == 2
     assert opnsense_server_ha_state_mock._labels_calls == [
@@ -346,21 +298,6 @@ def test_process_no_active():
         "maintenancemode",
         "unavailable",
     ]
-    assert main_ha_state_mock._state == "maintenancemode"
-    assert main_ha_state_mock.count_state_calls == 1
-    assert main_ha_state_mock._labels == {
-        "instance": "",
-        "host": MAIN_HOST,
-        "role": "main",
-    }
-
-    assert backup_ha_state_mock._state == "unavailable"
-    assert backup_ha_state_mock.count_state_calls == 1
-    assert backup_ha_state_mock._labels == {
-        "instance": "",
-        "host": BACKUP_HOST,
-        "role": "backup",
-    }
 
     assert opnsense_active_server_traffic_rate_mock.count_set_calls == 0
 
@@ -384,28 +321,22 @@ def test_process_with_falsy_value():
         status=404,
     )
 
-    main_ha_state_mock = FakePromEnum()
-    backup_ha_state_mock = FakePromEnum()
     opnsense_server_ha_state_mock = FakePromEnum()
     opnsense_active_server_traffic_rate_mock = FakePromGauge()
 
-    with mock.patch("opnsense_exporter.server.main_ha_state", new=main_ha_state_mock):
+    with mock.patch(
+        "opnsense_exporter.server.opnsense_server_ha_state",
+        new=opnsense_server_ha_state_mock,
+    ):
         with mock.patch(
-            "opnsense_exporter.server.backup_ha_state", new=backup_ha_state_mock
+            "opnsense_exporter.server.opnsense_active_server_traffic_rate",
+            new=opnsense_active_server_traffic_rate_mock,
         ):
-            with mock.patch(
-                "opnsense_exporter.server.opnsense_server_ha_state",
-                new=opnsense_server_ha_state_mock,
-            ):
-                with mock.patch(
-                    "opnsense_exporter.server.opnsense_active_server_traffic_rate",
-                    new=opnsense_active_server_traffic_rate_mock,
-                ):
-                    OPNSensePrometheusExporter(
-                        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
-                        OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
-                        "wan",
-                    ).process_requests()
+            OPNSensePrometheusExporter(
+                OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
+                OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
+                "wan",
+            ).process_requests()
 
     assert opnsense_server_ha_state_mock.count_state_calls == 2
     assert opnsense_server_ha_state_mock._labels_calls == [
@@ -421,20 +352,5 @@ def test_process_with_falsy_value():
         },
     ]
     assert opnsense_server_ha_state_mock._state_calls == ["active", "hot_standby"]
-    assert main_ha_state_mock._state == "active"
-    assert main_ha_state_mock.count_state_calls == 1
-    assert main_ha_state_mock._labels == {
-        "instance": "",
-        "host": MAIN_HOST,
-        "role": "main",
-    }
-
-    assert backup_ha_state_mock.count_state_calls == 1
-    assert backup_ha_state_mock._state == "hot_standby"
-    assert backup_ha_state_mock._labels == {
-        "instance": "",
-        "host": BACKUP_HOST,
-        "role": "backup",
-    }
 
     assert opnsense_active_server_traffic_rate_mock.count_set_calls == 0

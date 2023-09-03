@@ -104,12 +104,18 @@ You can setup env through `.env` file or environment variables with defined as d
 
 ## Changelog
 
-### Version 0.5.1 (2023-09-01)
+### Version 1.0.0 (UNRELEASED)
+
+- remove `opnsense_main_ha_state` and `opnsense_backup_ha_state`
+  metrics marked as deprecated on version 0.5.0 and replace
+  by `opnsense_server_ha_state` and `role` label
+
+### Version 0.5.1 (2023-09-04)
 
 - FIX `opnsense_server_ha_state` calls were not
   implemented
 
-### Version 0.5.0 (2023-09-01)
+### Version 0.5.0 (2023-09-04)
 
 - add role label in metrics
 - all to configure supervised interfaces using `--opnsense-interfaces`
