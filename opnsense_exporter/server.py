@@ -91,6 +91,12 @@ class OPNSensePrometheusExporter:
         backup_ha_state.labels(
             instance=self.exporter_instance, **self.backup.labels
         ).state(backup_sate.value)
+        opnsense_server_ha_state.labels(
+            instance=self.exporter_instance, **self.main.labels
+        ).state(main_state.value)
+        opnsense_server_ha_state.labels(
+            instance=self.exporter_instance, **self.backup.labels
+        ).state(backup_sate.value)
         active_opnsense = None
         if main_state == OPNSenseHAState.ACTIVE:
             active_opnsense = self.main
