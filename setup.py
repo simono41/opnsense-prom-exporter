@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 from setuptools import find_packages, setup
 
-version = "0.4.0"
+version = "0.5.0"
 HERE = pathlib.Path(__file__).parent
 
 
