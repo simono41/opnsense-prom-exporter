@@ -30,8 +30,13 @@ This exporter gives following metrics, all metrics received following labels:
 
 ### Enums
 
-- `opnsense_main_ha_state`: OPNSense HA state of the MAIN server
-- `opnsense_backup_ha_state`: OPNSense HA state of the BACKUP server
+- `opnsense_main_ha_state`: (deprecated) OPNSense HA state of the MAIN server
+- `opnsense_backup_ha_state`: (deprecated) OPNSense HA state of the BACKUP server
+- `opnsense_server_ha_state`: OPNSense HA state, on of following value:
+  - **active**: that OPNSense server is receiving traffic
+  - **hot_standby**: the OPNSense server is ready to be promote as active server
+  - **maintenancemode**: the OPNSense server was turned into maintenance mode
+  - **unavailable**: the OPNSense server wasn't accessible or return unexpected value
 
 ### Gauges
 
@@ -93,10 +98,8 @@ You can setup env through `.env` file or environment variables with defined as d
 
 ## Roadmap
 
-- allow to configure interfaces to get traffic rates for lan,wan and/or other names
-- refactor server in a class to avoid transmitted params over methods
 - allow to change the listening port (today it force using `8000`)
-- allow to configure timeouts using environemnt variables
+- allow to configure timeouts using environment variables
 - improves logging to get a debug mode to understand errors based on unexpected payloads
 
 ## Changelog
@@ -108,6 +111,8 @@ You can setup env through `.env` file or environment variables with defined as d
 - replace `active_server_bytes_received` and
   `active_server_bytes_transmitted` by
   `opnsense_active_server_traffic_rate`
+- add `opnsense_server_ha_state` and mark `opnsense_main_ha_state`
+  and `opnsense_backup_ha_state` as deprecated.
 
 ### Version 0.4.0 (2023-09-02)
 

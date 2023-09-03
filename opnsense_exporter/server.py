@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import socket
 import time
@@ -6,12 +7,21 @@ import time
 from dotenv import load_dotenv
 from prometheus_client import Enum, Gauge, start_http_server
 
-from opnsense_exporter.opnsense_api import OPNSenseAPI, OPNSenseRole
+from opnsense_exporter.opnsense_api import OPNSenseAPI, OPNSenseHAState, OPNSenseRole
 
+logger = logging.getLogger(__name__)
 load_dotenv()
 
-HA_STATES = ["active", "hot_standby", "unavailable", "maintenancemode"]
-main_ha_state = Enum(
+HA_STATES = [enum.value for enum in list(OPNSenseHAState)]
+
+
+class DeprecatedPromEnum(Enum, DeprecationWarning):
+    def state(self, *args, **kwargs):
+        super().state(*args, **kwargs)
+        logger.warning("This metric %s will be removed in v1.0.0", self._name)
+
+
+main_ha_state = DeprecatedPromEnum(
     "opnsense_main_ha_state",
     "OPNSense HA state of the MAIN server",
     [
@@ -21,7 +31,7 @@ main_ha_state = Enum(
     ],
     states=HA_STATES,
 )
-backup_ha_state = Enum(
+backup_ha_state = DeprecatedPromEnum(
     "opnsense_backup_ha_state",
     "OPNSense HA state of the BACKUP server",
     [
@@ -31,6 +41,18 @@ backup_ha_state = Enum(
     ],
     states=HA_STATES,
 )
+
+opnsense_server_ha_state = Enum(
+    "opnsense_server_ha_state",
+    "OPNSense server HA state",
+    [
+        "instance",
+        "host",
+        "role",
+    ],
+    states=HA_STATES,
+)
+
 opnsense_active_server_traffic_rate = Gauge(
     "opnsense_active_server_traffic_rate",
     "Active OPNSense server bytes in/out per interface",
@@ -64,15 +86,15 @@ class OPNSensePrometheusExporter:
         main_state = self.main.get_interface_vip_status()
         backup_sate = self.backup.get_interface_vip_status()
         main_ha_state.labels(instance=self.exporter_instance, **self.main.labels).state(
-            main_state
+            main_state.value
         )
         backup_ha_state.labels(
             instance=self.exporter_instance, **self.backup.labels
-        ).state(backup_sate)
+        ).state(backup_sate.value)
         active_opnsense = None
-        if main_state == "active":
+        if main_state == OPNSenseHAState.ACTIVE:
             active_opnsense = self.main
-        if backup_sate == "active":
+        if backup_sate == OPNSenseHAState.ACTIVE:
             active_opnsense = self.backup
         if active_opnsense:
             for traffic in active_opnsense.get_traffic(self.interfaces):

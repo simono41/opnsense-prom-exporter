@@ -26,9 +26,9 @@ def test_get_interface_vip_status_active():
     )
 
     assert (
-        OPNSenseAPI(
-            OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
-        ).get_interface_vip_status()
+        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD)
+        .get_interface_vip_status()
+        .value
         == "active"
     )
 
@@ -42,9 +42,9 @@ def test_get_interface_vip_status_backup():
     )
 
     assert (
-        OPNSenseAPI(
-            OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
-        ).get_interface_vip_status()
+        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD)
+        .get_interface_vip_status()
+        .value
         == "hot_standby"
     )
 
@@ -58,9 +58,9 @@ def test_get_interface_vip_status_mainteance_mode():
     )
 
     assert (
-        OPNSenseAPI(
-            OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
-        ).get_interface_vip_status()
+        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD)
+        .get_interface_vip_status()
+        .value
         == "maintenancemode"
     )
 
@@ -73,9 +73,9 @@ def test_get_interface_vip_status_unavailable_weird_case():
         body=generate_get_vip_status_paylaod("MASTER", "BACKUP", False),
     )
     assert (
-        OPNSenseAPI(
-            OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
-        ).get_interface_vip_status()
+        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD)
+        .get_interface_vip_status()
+        .value
         == "unavailable"
     )
 
@@ -89,9 +89,9 @@ def test_get_interface_vip_status_unavailable_rest_api_error():
         status=404,
     )
     assert (
-        OPNSenseAPI(
-            OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
-        ).get_interface_vip_status()
+        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD)
+        .get_interface_vip_status()
+        .value
         == "unavailable"
     )
 

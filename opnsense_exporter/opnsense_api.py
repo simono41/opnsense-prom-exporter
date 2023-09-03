@@ -7,6 +7,13 @@ from requests import RequestException
 logger = logging.getLogger(__name__)
 
 
+class OPNSenseHAState(Enum):
+    ACTIVE = "active"
+    HOT_STANDBY = "hot_standby"
+    UNAVAILABLE = "unavailable"
+    MAINTENANCE_MODE = "maintenancemode"
+
+
 class OPNSenseTrafficMetric(Enum):
     IN = "rate_bits_in"
     OUT = "rate_bits_out"
@@ -77,26 +84,26 @@ class OPNSenseAPI:
         response.raise_for_status()
         return response.json()
 
-    def get_interface_vip_status(self):
+    def get_interface_vip_status(self) -> OPNSenseHAState:
         try:
             data = self.get("/api/diagnostics/interface/get_vip_status/")
         except RequestException as ex:
             logger.error(
                 "Get VIP STATUS on %s failed with the following error %r", self.host, ex
             )
-            return "unavailable"
+            return OPNSenseHAState.UNAVAILABLE
         if data["carp"]["maintenancemode"]:
-            return "maintenancemode"
+            return OPNSenseHAState.MAINTENANCE_MODE
         is_active = all([row["status"] == "MASTER" for row in data["rows"]])
         if is_active:
-            return "active"
+            return OPNSenseHAState.ACTIVE
         is_backup = all([row["status"] == "BACKUP" for row in data["rows"]])
         if is_backup:
-            return "hot_standby"
+            return OPNSenseHAState.HOT_STANDBY
         logger.warning(
             "this host %s is no active nor backup received payload %s", self.host, data
         )
-        return "unavailable"
+        return OPNSenseHAState.UNAVAILABLE
 
     def get_traffic(self, interfaces):
         try:
