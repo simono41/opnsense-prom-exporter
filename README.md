@@ -26,6 +26,7 @@ This exporter gives following metrics, all metrics received following labels:
 
 - `instance`: by default this is set with the hostname where is running this exporter service
 - `host`: the host of the OPNSense
+- `role`: `main` or `backup`
 
 ### Enums
 
@@ -81,25 +82,36 @@ You can setup env through `.env` file or environment variables with defined as d
 - **OPNSENSE_BACKUP_HOST**: default value for `--backup-host` param
 - **OPNSENSE_USERNAME**: default value for `--opnsense-user` param
 - **OPNSENSE_PASSWORD**: default value for `--opnsense-password` param
+- **OPNSENSE_INTERFACES**: default value for `--opnsense-interfaces` param
 
 ## Roadmap
 
+- merge `opnsense_active_server_bytes_received` and `opnsense_active_server_bytes_transmitted`
+  metrics adding labels to distinguish rates transmitted and rate received
+- allow to configure interfaces to get traffic rates for lan,wan and/or other names
+- refactor server in a class to avoid transmitted params over methods
 - allow to change the listening port (today it force using `8000`)
+- allow to configure timeouts using environemnt variables
+- improves logging to get a debug mode to understand errors based on unexpected payloads
 
 ## Changelog
 
-### Version 0.4.0
+### Version 0.0.5 (UNRELEASED)
 
-Higher timeout while getting WAN traffic info
+* add role label in metrics
 
-### Version 0.3.0
+### Version 0.4.0 (2023-09-02)
 
-Use proper method to compute WAN traffic
+* Higher timeout while getting WAN traffic info
 
-### Version 0.2.0
+### Version 0.3.0 (2023-09-02)
 
-Setup automatic release from gitlab while pushing new tag
+* Use proper method to compute WAN traffic
 
-### Version 0.1.0
+### Version 0.2.0 (2023-09-01)
 
-Initial version
+* Setup automatic release from gitlab while pushing new tag
+
+### Version 0.1.0 (2023-09-01)
+
+* Initial version

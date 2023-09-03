@@ -2,7 +2,7 @@ from unittest import mock
 
 import responses
 
-from opnsense_exporter.opnsense_api import OPNSenseAPI
+from opnsense_exporter.opnsense_api import OPNSenseAPI, OPNSenseRole
 from opnsense_exporter.server import process_requests, run
 
 from .common import (
@@ -109,23 +109,32 @@ def test_process_requests():
                     new=active_server_bytes_transmitted_mock,
                 ):
                     process_requests(
-                        OPNSenseAPI(MAIN_HOST, LOGIN, PASSWORD),
-                        OPNSenseAPI(BACKUP_HOST, LOGIN, PASSWORD),
+                        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
+                        OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
                     )
 
     assert main_ha_state_mock._state == "active"
     assert main_ha_state_mock.count_state_calls == 1
-    assert main_ha_state_mock._labels == {"instance": "", "host": MAIN_HOST}
+    assert main_ha_state_mock._labels == {
+        "instance": "",
+        "host": MAIN_HOST,
+        "role": "main",
+    }
 
     assert backup_ha_state_mock._state == "hot_standby"
     assert backup_ha_state_mock.count_state_calls == 1
-    assert backup_ha_state_mock._labels == {"instance": "", "host": BACKUP_HOST}
+    assert backup_ha_state_mock._labels == {
+        "instance": "",
+        "host": BACKUP_HOST,
+        "role": "backup",
+    }
 
     assert active_server_bytes_received_mock.value == 20538
     assert active_server_bytes_received_mock.count_set_calls == 1
     assert active_server_bytes_received_mock._labels == {
         "instance": "",
         "host": MAIN_HOST,
+        "role": "main",
     }
 
     assert active_server_bytes_transmitted_mock.value == 10034
@@ -133,6 +142,7 @@ def test_process_requests():
     assert active_server_bytes_transmitted_mock._labels == {
         "instance": "",
         "host": MAIN_HOST,
+        "role": "main",
     }
 
 
@@ -172,22 +182,31 @@ def test_process_requests_backup_active():
                     new=active_server_bytes_transmitted_mock,
                 ):
                     process_requests(
-                        OPNSenseAPI(MAIN_HOST, LOGIN, PASSWORD),
-                        OPNSenseAPI(BACKUP_HOST, LOGIN, PASSWORD),
+                        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
+                        OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
                     )
     assert main_ha_state_mock._state == "maintenancemode"
     assert main_ha_state_mock.count_state_calls == 1
-    assert main_ha_state_mock._labels == {"instance": "", "host": MAIN_HOST}
+    assert main_ha_state_mock._labels == {
+        "instance": "",
+        "host": MAIN_HOST,
+        "role": "main",
+    }
 
     assert backup_ha_state_mock._state == "active"
     assert backup_ha_state_mock.count_state_calls == 1
-    assert backup_ha_state_mock._labels == {"instance": "", "host": BACKUP_HOST}
+    assert backup_ha_state_mock._labels == {
+        "instance": "",
+        "host": BACKUP_HOST,
+        "role": "backup",
+    }
 
     assert active_server_bytes_received_mock.value == 20538
     assert active_server_bytes_received_mock.count_set_calls == 1
     assert active_server_bytes_received_mock._labels == {
         "instance": "",
         "host": BACKUP_HOST,
+        "role": "backup",
     }
 
     assert active_server_bytes_transmitted_mock.value == 10034
@@ -195,6 +214,7 @@ def test_process_requests_backup_active():
     assert active_server_bytes_transmitted_mock._labels == {
         "instance": "",
         "host": BACKUP_HOST,
+        "role": "backup",
     }
 
 
@@ -235,17 +255,25 @@ def test_process_no_active():
                     new=active_server_bytes_transmitted_mock,
                 ):
                     process_requests(
-                        OPNSenseAPI(MAIN_HOST, LOGIN, PASSWORD),
-                        OPNSenseAPI(BACKUP_HOST, LOGIN, PASSWORD),
+                        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
+                        OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
                     )
 
     assert main_ha_state_mock._state == "maintenancemode"
     assert main_ha_state_mock.count_state_calls == 1
-    assert main_ha_state_mock._labels == {"instance": "", "host": MAIN_HOST}
+    assert main_ha_state_mock._labels == {
+        "instance": "",
+        "host": MAIN_HOST,
+        "role": "main",
+    }
 
     assert backup_ha_state_mock._state == "unavailable"
     assert backup_ha_state_mock.count_state_calls == 1
-    assert backup_ha_state_mock._labels == {"instance": "", "host": BACKUP_HOST}
+    assert backup_ha_state_mock._labels == {
+        "instance": "",
+        "host": BACKUP_HOST,
+        "role": "backup",
+    }
 
     assert active_server_bytes_received_mock.count_set_calls == 0
     assert active_server_bytes_transmitted_mock.count_set_calls == 0
@@ -288,16 +316,24 @@ def test_process_with_falsy_value():
                     new=active_server_bytes_transmitted_mock,
                 ):
                     process_requests(
-                        OPNSenseAPI(MAIN_HOST, LOGIN, PASSWORD),
-                        OPNSenseAPI(BACKUP_HOST, LOGIN, PASSWORD),
+                        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD),
+                        OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD),
                     )
     assert main_ha_state_mock._state == "active"
     assert main_ha_state_mock.count_state_calls == 1
-    assert main_ha_state_mock._labels == {"instance": "", "host": MAIN_HOST}
+    assert main_ha_state_mock._labels == {
+        "instance": "",
+        "host": MAIN_HOST,
+        "role": "main",
+    }
 
     assert backup_ha_state_mock.count_state_calls == 1
     assert backup_ha_state_mock._state == "hot_standby"
-    assert backup_ha_state_mock._labels == {"instance": "", "host": BACKUP_HOST}
+    assert backup_ha_state_mock._labels == {
+        "instance": "",
+        "host": BACKUP_HOST,
+        "role": "backup",
+    }
 
     assert active_server_bytes_received_mock.count_set_calls == 0
     assert active_server_bytes_transmitted_mock.count_set_calls == 0

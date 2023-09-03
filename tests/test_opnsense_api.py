@@ -1,8 +1,9 @@
 import responses
 
-from opnsense_exporter.opnsense_api import OPNSenseAPI
+from opnsense_exporter.opnsense_api import OPNSenseAPI, OPNSenseRole
 
 from .common import (
+    BACKUP_HOST,
     LOGIN,
     MAIN_HOST,
     PASSWORD,
@@ -20,7 +21,10 @@ def test_get_interface_vip_status_active():
     )
 
     assert (
-        OPNSenseAPI(MAIN_HOST, LOGIN, PASSWORD).get_interface_vip_status() == "active"
+        OPNSenseAPI(
+            OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
+        ).get_interface_vip_status()
+        == "active"
     )
 
 
@@ -33,7 +37,9 @@ def test_get_interface_vip_status_backup():
     )
 
     assert (
-        OPNSenseAPI(MAIN_HOST, LOGIN, PASSWORD).get_interface_vip_status()
+        OPNSenseAPI(
+            OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
+        ).get_interface_vip_status()
         == "hot_standby"
     )
 
@@ -47,7 +53,9 @@ def test_get_interface_vip_status_mainteance_mode():
     )
 
     assert (
-        OPNSenseAPI(MAIN_HOST, LOGIN, PASSWORD).get_interface_vip_status()
+        OPNSenseAPI(
+            OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
+        ).get_interface_vip_status()
         == "maintenancemode"
     )
 
@@ -60,7 +68,9 @@ def test_get_interface_vip_status_unavailable_weird_case():
         body=generate_get_vip_status_paylaod("MASTER", "BACKUP", False),
     )
     assert (
-        OPNSenseAPI(MAIN_HOST, LOGIN, PASSWORD).get_interface_vip_status()
+        OPNSenseAPI(
+            OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
+        ).get_interface_vip_status()
         == "unavailable"
     )
 
@@ -74,7 +84,9 @@ def test_get_interface_vip_status_unavailable_rest_api_error():
         status=404,
     )
     assert (
-        OPNSenseAPI(MAIN_HOST, LOGIN, PASSWORD).get_interface_vip_status()
+        OPNSenseAPI(
+            OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
+        ).get_interface_vip_status()
         == "unavailable"
     )
 
@@ -86,7 +98,9 @@ def test_get_wan_traffic():
         f"https://{MAIN_HOST}/api/diagnostics/traffic/top/wan",
         body=generate_diagnostics_traffic_interface_paylaod(),
     )
-    assert OPNSenseAPI(MAIN_HOST, LOGIN, PASSWORD).get_wan_trafic() == (
+    assert OPNSenseAPI(
+        OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
+    ).get_wan_trafic() == (
         20538,
         10034,
     )
@@ -100,7 +114,20 @@ def test_get_wan_traffic_none():
         json={"error": "not found"},
         status=404,
     )
-    assert OPNSenseAPI(MAIN_HOST, LOGIN, PASSWORD).get_wan_trafic() == (
+    assert OPNSenseAPI(
+        OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD
+    ).get_wan_trafic() == (
         None,
         None,
     )
+
+
+def test_labels():
+    assert OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD).labels == {
+        "role": "main",
+        "host": MAIN_HOST,
+    }
+    assert OPNSenseAPI(OPNSenseRole.BACKUP, BACKUP_HOST, LOGIN, PASSWORD).labels == {
+        "role": "backup",
+        "host": BACKUP_HOST,
+    }

@@ -1,4 +1,5 @@
 import logging
+from enum import Enum
 
 import requests
 from requests import RequestException
@@ -6,15 +7,29 @@ from requests import RequestException
 logger = logging.getLogger(__name__)
 
 
+class OPNSenseRole(Enum):
+    MAIN = "main"
+    BACKUP = "backup"
+
+
 class OPNSenseAPI:
     host: str = None
     login: str = None
     password: str = None
+    role: OPNSenseRole = None
 
-    def __init__(self, host, login, password):
+    def __init__(self, role, host, login, password):
+        self.role = role
         self.host = host
         self.login = login
         self.password = password
+
+    @property
+    def labels(self):
+        return {
+            "host": self.host,
+            "role": self.role.value,
+        }
 
     def prepare_url(self, path):
         return f"https://{self.host}{path}"
@@ -65,7 +80,7 @@ class OPNSenseAPI:
 
         received = 0
         transmitted = 0
-        for record in data["wan"]["records"]:
-            received += record["rate_bits_in"]
-            transmitted += record["rate_bits_out"]
+        for record in data.get("wan", []).get("records", []):
+            received += record.get("rate_bits_in", 0)
+            transmitted += record.get("rate_bits_out", 0)
         return received, transmitted

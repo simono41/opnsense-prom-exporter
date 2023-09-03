@@ -6,7 +6,7 @@ import time
 from dotenv import load_dotenv
 from prometheus_client import Enum, Gauge, start_http_server
 
-from opnsense_exporter.opnsense_api import OPNSenseAPI
+from opnsense_exporter.opnsense_api import OPNSenseAPI, OPNSenseRole
 
 load_dotenv()
 
@@ -17,6 +17,7 @@ main_ha_state = Enum(
     [
         "instance",
         "host",
+        "role",
     ],
     states=HA_STATES,
 )
@@ -26,6 +27,7 @@ backup_ha_state = Enum(
     [
         "instance",
         "host",
+        "role",
     ],
     states=HA_STATES,
 )
@@ -35,6 +37,7 @@ active_server_bytes_received = Gauge(
     [
         "instance",
         "host",
+        "role",
     ],
 )
 active_server_bytes_transmitted = Gauge(
@@ -43,6 +46,7 @@ active_server_bytes_transmitted = Gauge(
     [
         "instance",
         "host",
+        "role",
     ],
 )
 
@@ -51,8 +55,8 @@ def process_requests(main, backup, exporter_instance: str = ""):
     """A dummy function that takes some time."""
     main_state = main.get_interface_vip_status()
     backup_sate = backup.get_interface_vip_status()
-    main_ha_state.labels(instance=exporter_instance, host=main.host).state(main_state)
-    backup_ha_state.labels(instance=exporter_instance, host=backup.host).state(
+    main_ha_state.labels(instance=exporter_instance, **main.labels).state(main_state)
+    backup_ha_state.labels(instance=exporter_instance, **backup.labels).state(
         backup_sate
     )
     active_opnsense = None
@@ -64,11 +68,11 @@ def process_requests(main, backup, exporter_instance: str = ""):
         bytes_received, bytes_transmitted = active_opnsense.get_wan_trafic()
         if bytes_received or bytes_received == 0:
             active_server_bytes_received.labels(
-                instance=exporter_instance, host=active_opnsense.host
+                instance=exporter_instance, **active_opnsense.labels
             ).set(bytes_received)
         if bytes_transmitted or bytes_transmitted == 0:
             active_server_bytes_transmitted.labels(
-                instance=exporter_instance, host=active_opnsense.host
+                instance=exporter_instance, **active_opnsense.labels
             ).set(bytes_transmitted)
 
 
@@ -144,8 +148,12 @@ def run():
 
     arguments = parser.parse_args()
     start_server(
-        OPNSenseAPI(arguments.main, arguments.user, arguments.password),
-        OPNSenseAPI(arguments.backup, arguments.user, arguments.password),
+        OPNSenseAPI(
+            OPNSenseRole.MAIN, arguments.main, arguments.user, arguments.password
+        ),
+        OPNSenseAPI(
+            OPNSenseRole.BACKUP, arguments.backup, arguments.user, arguments.password
+        ),
         check_frequency=arguments.frequency,
         exporter_instance=arguments.prom_instance,
     )
