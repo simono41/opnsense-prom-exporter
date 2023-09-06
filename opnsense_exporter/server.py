@@ -131,7 +131,9 @@ def run():
         type=str,
         dest="interfaces",
         default=os.environ.get("OPNSENSE_INTERFACES", "wan,lan"),
-        help="OPNsense interfaces (coma separated) list to export trafic rates (bytes/s)",
+        help="OPNsense interfaces (coma separated) list to export trafic rates (bytes/s). "
+        "An empty string '' means not calling the traffic diagnostic REST API so no "
+        "`opnsense_active_server_traffic_rate` metric.",
     )
     parser.add_argument(
         "--opnsense-password",

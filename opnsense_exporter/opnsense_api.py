@@ -106,6 +106,8 @@ class OPNSenseAPI:
         return OPNSenseHAState.UNAVAILABLE
 
     def get_traffic(self, interfaces):
+        if not interfaces:
+            return []
         try:
             data = self.get(f"/api/diagnostics/traffic/top/{interfaces}", timeout=15)
         except RequestException as ex:
@@ -120,7 +122,7 @@ class OPNSenseAPI:
         for interface in interfaces.split(","):
             traffic_in = OPNSenseTraffic(interface, OPNSenseTrafficMetric.IN)
             traffic_out = OPNSenseTraffic(interface, OPNSenseTrafficMetric.OUT)
-            for record in data.get(interface, []).get("records", []):
+            for record in data.get(interface, {}).get("records", []):
                 traffic_in.value += record.get(OPNSenseTrafficMetric.IN.value, 0)
                 traffic_out.value += record.get(OPNSenseTrafficMetric.OUT.value, 0)
             traffics.extend([traffic_in, traffic_out])

@@ -75,8 +75,11 @@ optional arguments:
                         OPNsense user. Expect to be the same on MAIN and
                         BACKUP servers
   --opnsense-interfaces INTERFACES, -i INTERFACES
-                        OPNsense interfaces (coma separated) list to export
-                        trafic rates (bytes/s) (default: wan,lan)
+                        OPNsense interfaces (coma separated) list to
+                        export trafic rates (bytes/s). An empty string ''
+                        means not calling the traffic diagnostic REST API
+                        so no `opnsense_active_server_traffic_rate`
+                        metric. (default: wan,lan)
   --opnsense-password PASSWORD, -p PASSWORD
                         OPNsense password. Expect to be the same on MAIN
                         and BACKUP servers
@@ -109,6 +112,9 @@ You can setup env through `.env` file or environment variables with defined as d
 - remove `opnsense_main_ha_state` and `opnsense_backup_ha_state`
   metrics marked as deprecated on version 0.5.0 and replace
   by `opnsense_server_ha_state` and `role` label
+- allow empty string interfaces to **not** call diagnostic
+  traffic REST API
+
 
 ### Version 0.5.1 (2023-09-04)
 

@@ -129,6 +129,19 @@ def test_get_traffic_none():
     )
 
 
+@responses.activate
+def test_get_traffic_empty_string():
+    rsp = responses.add(
+        responses.GET,
+        f"https://{MAIN_HOST}/api/diagnostics/traffic/top/",
+        json={"not": "called"},
+    )
+    assert (
+        OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD).get_traffic("") == []
+    )
+    assert rsp.call_count == 0
+
+
 def test_labels():
     assert OPNSenseAPI(OPNSenseRole.MAIN, MAIN_HOST, LOGIN, PASSWORD).labels == {
         "role": "main",
