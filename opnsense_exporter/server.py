@@ -136,6 +136,20 @@ def run():
         "`opnsense_active_server_traffic_rate` metric.",
     )
     parser.add_argument(
+        "--opnsense-timeout-sec-get-vip-status",
+        type=int,
+        dest="get_vip_status_timeout_sec",
+        default=int(os.environ.get("OPNSENSE_TIMEOUT_SEC_GET_VIP_STATUS", 5)),
+        help="Allow to configure timeout while requesting OPNSense REST API /api/diagnostics/interface/get_vip_status/",
+    )
+    parser.add_argument(
+        "--opnsense-timeout-sec-get-traffic",
+        type=int,
+        dest="get_traffic_timeout_sec",
+        default=int(os.environ.get("OPNSENSE_TIMEOUT_SEC_GET_TRAFFIC", 15)),
+        help="Allow to configure timeout while requesting OPNSense REST API /api/diagnostics/traffic/top/[INTERFACES]",
+    )
+    parser.add_argument(
         "--opnsense-password",
         "-p",
         type=str,
@@ -158,10 +172,20 @@ def run():
 
     server = OPNSensePrometheusExporter(
         OPNSenseAPI(
-            OPNSenseRole.MAIN, arguments.main, arguments.user, arguments.password
+            OPNSenseRole.MAIN,
+            arguments.main,
+            arguments.user,
+            arguments.password,
+            get_vip_status_timeout_sec=arguments.get_vip_status_timeout_sec,
+            get_traffic_timeout_sec=arguments.get_traffic_timeout_sec,
         ),
         OPNSenseAPI(
-            OPNSenseRole.BACKUP, arguments.backup, arguments.user, arguments.password
+            OPNSenseRole.BACKUP,
+            arguments.backup,
+            arguments.user,
+            arguments.password,
+            get_vip_status_timeout_sec=arguments.get_vip_status_timeout_sec,
+            get_traffic_timeout_sec=arguments.get_traffic_timeout_sec,
         ),
         arguments.interfaces,
         check_frequency=arguments.frequency,

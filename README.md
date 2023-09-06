@@ -80,6 +80,16 @@ optional arguments:
                         means not calling the traffic diagnostic REST API
                         so no `opnsense_active_server_traffic_rate`
                         metric. (default: wan,lan)
+  --opnsense-timeout-sec-get-vip-status GET_VIP_STATUS_TIMEOUT_SEC
+                        Allow to configure timeout while requesting
+                        OPNSense REST API
+                        /api/diagnostics/interface/get_vip_status/
+                        (default: 5)
+  --opnsense-timeout-sec-get-traffic GET_TRAFFIC_TIMEOUT_SEC
+                        Allow to configure timeout while requesting
+                        OPNSense REST API
+                        /api/diagnostics/traffic/top/[INTERFACES]
+                        (default: 15)
   --opnsense-password PASSWORD, -p PASSWORD
                         OPNsense password. Expect to be the same on MAIN
                         and BACKUP servers
@@ -98,23 +108,29 @@ You can setup env through `.env` file or environment variables with defined as d
 - **OPNSENSE_USERNAME**: default value for `--opnsense-user` param
 - **OPNSENSE_PASSWORD**: default value for `--opnsense-password` param
 - **OPNSENSE_INTERFACES**: default value for `--opnsense-interfaces` param
+- **OPNSENSE_TIMEOUT_SEC_GET_VIP_STATUS**: default value for `--opnsense-timeout-sec-get-vip-status` param
+- **OPNSENSE_TIMEOUT_SEC_GET_TRAFFIC**: default value for `--opnsense-timeout-sec-get-traffic` param
 
 ## Roadmap
 
 - allow to change the listening port (today it force using `8000`)
-- allow to configure timeouts using environment variables
 - improves logging to get a debug mode to understand errors based on unexpected payloads
 
 ## Changelog
 
-### Version 1.0.0 (UNRELEASED)
+### Version 1.1.0 (2023-09-06)
+
+- allow to configure OPNSense REST API calls timeout per REST API endpoint adding
+  `--opnsense-timeout-sec-get-vip-status` and
+  `--opnsense-timeout-sec-get-traffic` parameters.
+
+### Version 1.0.0 (2023-09-06)
 
 - remove `opnsense_main_ha_state` and `opnsense_backup_ha_state`
   metrics marked as deprecated on version 0.5.0 and replace
   by `opnsense_server_ha_state` and `role` label
 - allow empty string interfaces to **not** call diagnostic
   traffic REST API
-
 
 ### Version 0.5.1 (2023-09-04)
 

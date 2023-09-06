@@ -24,7 +24,12 @@ class OPNSenseTraffic:
     metric: OPNSenseTrafficMetric = None
     value: int = 0
 
-    def __init__(self, interface: str, metric: OPNSenseTrafficMetric, value: int = 0):
+    def __init__(
+        self,
+        interface: str,
+        metric: OPNSenseTrafficMetric,
+        value: int = 0,
+    ):
         self.value = value
         self.interface = interface
         self.metric = metric
@@ -55,12 +60,24 @@ class OPNSenseAPI:
     login: str = None
     password: str = None
     role: OPNSenseRole = None
+    get_vip_status_timeout_sec: int = 5
+    get_traffic_timeout_sec: int = 15
 
-    def __init__(self, role, host, login, password):
+    def __init__(
+        self,
+        role,
+        host,
+        login,
+        password,
+        get_vip_status_timeout_sec: int = 5,
+        get_traffic_timeout_sec: int = 5,
+    ):
         self.role = role
         self.host = host
         self.login = login
         self.password = password
+        self.get_vip_status_timeout_sec = get_vip_status_timeout_sec
+        self.get_traffic_timeout_sec = get_traffic_timeout_sec
 
     @property
     def labels(self):
@@ -86,7 +103,10 @@ class OPNSenseAPI:
 
     def get_interface_vip_status(self) -> OPNSenseHAState:
         try:
-            data = self.get("/api/diagnostics/interface/get_vip_status/")
+            data = self.get(
+                "/api/diagnostics/interface/get_vip_status/",
+                timeout=self.get_vip_status_timeout_sec,
+            )
         except RequestException as ex:
             logger.error(
                 "Get VIP STATUS on %s failed with the following error %r", self.host, ex
@@ -109,7 +129,10 @@ class OPNSenseAPI:
         if not interfaces:
             return []
         try:
-            data = self.get(f"/api/diagnostics/traffic/top/{interfaces}", timeout=15)
+            data = self.get(
+                f"/api/diagnostics/traffic/top/{interfaces}",
+                timeout=self.get_traffic_timeout_sec,
+            )
         except RequestException as ex:
             logger.error(
                 "Get diagnostics traffic on %s interface(s) for %s host failed with the following error %r",

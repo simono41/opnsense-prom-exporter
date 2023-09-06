@@ -1,3 +1,5 @@
+from unittest import mock
+
 import responses
 
 from opnsense_exporter.opnsense_api import (
@@ -15,6 +17,32 @@ from .common import (
     generate_diagnostics_traffic_interface_paylaod,
     generate_get_vip_status_paylaod,
 )
+
+
+def test_get_vip_status_timeout_sec():
+    with mock.patch("opnsense_exporter.opnsense_api.OPNSenseAPI.get") as get_mock:
+        OPNSenseAPI(
+            OPNSenseRole.MAIN,
+            MAIN_HOST,
+            LOGIN,
+            PASSWORD,
+            get_vip_status_timeout_sec=11,
+        ).get_interface_vip_status()
+        get_mock.assert_called_once_with(
+            "/api/diagnostics/interface/get_vip_status/", timeout=11
+        )
+
+
+def test_get_traffic_timeout_sec():
+    with mock.patch("opnsense_exporter.opnsense_api.OPNSenseAPI.get") as get_mock:
+        OPNSenseAPI(
+            OPNSenseRole.MAIN,
+            MAIN_HOST,
+            LOGIN,
+            PASSWORD,
+            get_traffic_timeout_sec=11,
+        ).get_traffic("wan")
+        get_mock.assert_called_once_with("/api/diagnostics/traffic/top/wan", timeout=11)
 
 
 @responses.activate

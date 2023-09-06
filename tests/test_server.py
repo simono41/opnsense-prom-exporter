@@ -84,6 +84,10 @@ def test_parser(server_mock):
             "user-test",
             "-p",
             "pwd-test",
+            "--opnsense-timeout-sec-get-vip-status",
+            "7",
+            "--opnsense-timeout-sec-get-traffic",
+            "9",
             "-i",
             "efg,hij",
             "--prometheus-instance",
@@ -97,10 +101,14 @@ def test_parser(server_mock):
         assert server.main.host == "main.host"
         assert server.main.login == "user-test"
         assert server.main.password == "pwd-test"
+        assert server.main.get_vip_status_timeout_sec == 7
+        assert server.main.get_traffic_timeout_sec == 9
         assert server.backup.role == OPNSenseRole.BACKUP
         assert server.backup.host == "backup.host"
         assert server.backup.login == "user-test"
         assert server.backup.password == "pwd-test"
+        assert server.backup.get_vip_status_timeout_sec == 7
+        assert server.backup.get_traffic_timeout_sec == 9
         assert server.check_frequency == 15
         assert server.interfaces == "efg,hij"
 
