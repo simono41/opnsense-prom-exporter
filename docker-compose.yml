@@ -1,0 +1,20 @@
+version: '3.4'
+
+services:
+  opnsense-exporter:
+    image: opnsense-exporter
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: always
+    container_name: opnsense-exporter
+    #network_mode: "host" 
+    ports:
+      - 8000:8000
+    env_file:
+      - .env
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "3"
+            max-size: 10m
